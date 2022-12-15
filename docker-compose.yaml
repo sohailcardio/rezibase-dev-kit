@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  rezibase:
+    build:
+      context: ./rezibase
+      dockerfile: Dockerfile.dev
+    command: ["sh", "-c", "python3 -m pip install --upgrade debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m flask run --host 0.0.0.0"]
+    #command: ["sleep","infinity"]
+    ports:
+      - 5000:5000
+      - 5678:5678
+    networks:
+      - rezibase-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    volumes:
+      - ./rezibase:/rezibase
+    depends_on:
+     - postgres
+     - redis
+    # configs:
+    #   - httpd-config
+    # secrets:
+    #   - server-certificate
+  
+  postgres:
+    container_name: rezibase-postgres
+    image: postgres:15-alpine
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    networks:
+      - rezibase-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: GO43JSQAw5rGQDHpkF3O
+      POSTGRES_DB: DavidTest
+      PG_DATA: /var/lib/postgresql/data/pgdata
+
+  redis:
+    container_name: rezibaes-redis
+    image: redis:7-alpine
+    networks:
+      - rezibase-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+
+# configs:
+#   httpd-config:
+#     external: true
+
+# secrets:
+#   server-certificate:
+#     external: true
+volumes:
+  postgres: null
+networks:
+  # The presence of these objects is sufficient to define them
+  rezibase-network: {}
